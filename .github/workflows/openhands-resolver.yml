@@ -3,6 +3,22 @@ name: Auto-Fix Tagged Issue with OpenHands
 on:
   workflow_call:
     inputs:
+      dotenv-me:
+        type: string
+        description: 'The key for dotenv-vault'
+        required: true
+      dotenv-key:
+        type: string
+        description: 'The key for .env.ci'
+        required: true
+      blumint-development-sa:
+        type: string
+        description: 'Development service account credentials'
+        required: true
+      blumint-production-sa:
+        type: string
+        description: 'Production service account credentials'
+        required: true
       max_iterations:
         required: false
         type: number
@@ -78,6 +94,14 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Checkout Full
+        uses: ./.github/actions/checkout-full
+        with:
+          dotenv-me: ${{ inputs.dotenv-me }}
+          dotenv-key: ${{ inputs.dotenv-key }}
+          blumint-development-sa: ${{ inputs.blumint-development-sa }}
+          blumint-production-sa: ${{ inputs.blumint-production-sa }}
 
       - name: Set up Python
         uses: actions/setup-python@v5
