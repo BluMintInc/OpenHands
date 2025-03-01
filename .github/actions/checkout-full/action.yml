@@ -1,0 +1,54 @@
+name: 'Checkout Full'
+description: 'Checks out repository, installs dependencies, and sets up Firebase credentials'
+
+inputs:
+  dotenv-me:
+    description: 'The key for dotenv-vault'
+    required: true
+  dotenv-key:
+    description: 'The key for .env.ci'
+    required: true
+  blumint-development-sa:
+    description: 'Development service account credentials'
+    required: true
+  blumint-production-sa:
+    description: 'Production service account credentials'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Load Dotenv Vault
+      uses: BluMintInc/load-dotenv-vault@v1.2.8
+      with:
+        dotenv-key: ${{ inputs.dotenv-key }}
+        mode: ''
+
+    - name: Create .env.me
+      shell: bash
+      env:
+        DOTENV_ME: ${{ inputs.dotenv-me }}
+      run: |
+        # Safely set up dotenv key - remove if exists and create new
+        rm -f .env.me
+        echo "DOTENV_ME=${DOTENV_ME}" > .env.me
+
+    - name: Pull Environment Configurations
+      shell: bash
+      run: |
+        # Pull all environment configurations
+        npx dotenv-vault pull -y
+        npx dotenv-vault pull production -y
+        npx dotenv-vault pull emulators -y
+        npx dotenv-vault pull staging -y
+        npx dotenv-vault pull ci -y
+
+    - name: Create Service Account Credentials
+      uses: jsdaniell/create-json@1.1.2
+      with:
+        name: "credentials.json"
+        json: ${{ github.ref_name == 'main' && inputs.blumint-production-sa || inputs.blumint-development-sa }}
+
+    - name: Set GOOGLE_APPLICATION_CREDENTIALS
+      shell: bash
+      run: echo "GOOGLE_APPLICATION_CREDENTIALS=$(readlink -f credentials.json)" >> $GITHUB_ENV
