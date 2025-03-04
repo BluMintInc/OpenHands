@@ -32,7 +32,7 @@ jobs:
   # Builds the OpenHands Docker images
   ghcr_build_app:
     name: Build App Image
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2204
     permissions:
       contents: read
       packages: write
@@ -78,7 +78,7 @@ jobs:
   # Builds the runtime Docker images
   ghcr_build_runtime:
     name: Build Image
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2204
     permissions:
       contents: read
       packages: write
@@ -104,11 +104,11 @@ jobs:
         id: buildx
         uses: docker/setup-buildx-action@v3
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: useblacksmith/setup-python@v6
         with:
           python-version: '3.12'
       - name: Cache Poetry dependencies
-        uses: actions/cache@v4
+        uses: useblacksmith/cache@v5
         with:
           path: |
             ~/.cache/pypoetry
@@ -146,7 +146,7 @@ jobs:
 
   verify_hash_equivalence_in_runtime_and_app:
     name: Verify Hash Equivalence in Runtime and Docker images
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2204
     needs: [ghcr_build_runtime, ghcr_build_app]
     strategy:
       fail-fast: false
@@ -155,7 +155,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Cache Poetry dependencies
-        uses: actions/cache@v4
+        uses: useblacksmith/cache@v5
         with:
           path: |
             ~/.cache/pypoetry
@@ -164,7 +164,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-poetry-
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: useblacksmith/setup-python@v6
         with:
           python-version: '3.12'
       - name: Install poetry via pipx
@@ -198,7 +198,7 @@ jobs:
   test_runtime_root:
     name: RT Unit Tests (Root)
     needs: [ghcr_build_runtime]
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2204
     strategy:
       fail-fast: false
       matrix:
@@ -220,7 +220,7 @@ jobs:
         run: |
           docker load --input /tmp/runtime-${{ matrix.base_image }}.tar
       - name: Cache Poetry dependencies
-        uses: actions/cache@v4
+        uses: useblacksmith/cache@v5
         with:
           path: |
             ~/.cache/pypoetry
@@ -229,7 +229,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-poetry-
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: useblacksmith/setup-python@v6
         with:
           python-version: '3.12'
       - name: Install poetry via pipx
@@ -263,7 +263,7 @@ jobs:
   # Run unit tests with the Docker runtime Docker images as openhands user
   test_runtime_oh:
     name: RT Unit Tests (openhands)
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2204
     needs: [ghcr_build_runtime]
     strategy:
       matrix:
@@ -285,7 +285,7 @@ jobs:
         run: |
           docker load --input /tmp/runtime-${{ matrix.base_image }}.tar
       - name: Cache Poetry dependencies
-        uses: actions/cache@v4
+        uses: useblacksmith/cache@v5
         with:
           path: |
             ~/.cache/pypoetry
@@ -294,7 +294,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-poetry-
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: useblacksmith/setup-python@v6
         with:
           python-version: '3.12'
       - name: Install poetry via pipx
@@ -332,7 +332,7 @@ jobs:
   runtime_tests_check_success:
     name: All Runtime Tests Passed
     if: ${{ !cancelled() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') }}
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2204
     needs: [test_runtime_root, test_runtime_oh, verify_hash_equivalence_in_runtime_and_app]
     steps:
       - name: All tests passed
@@ -341,7 +341,7 @@ jobs:
   runtime_tests_check_fail:
     name: All Runtime Tests Passed
     if: ${{ cancelled() || contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2204
     needs: [test_runtime_root, test_runtime_oh, verify_hash_equivalence_in_runtime_and_app]
     steps:
       - name: Some tests failed
@@ -352,7 +352,7 @@ jobs:
     name: Update PR Description
     if: github.event_name == 'pull_request' && !github.event.pull_request.head.repo.fork && github.actor != 'dependabot[bot]'
     needs: [ghcr_build_runtime]
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2204
     steps:
       - name: Checkout
         uses: actions/checkout@v4
