@@ -234,20 +234,8 @@ jobs:
           EVENT_NAME: ${{ github.event_name || '' }}
         with:
           script: |
-            const commentBody = process.env.COMMENT_BODY.trim();
-            const reviewBody = process.env.REVIEW_BODY.trim();
-            const labelName = process.env.LABEL_NAME.trim();
-            const eventName = process.env.EVENT_NAME.trim();
-            // Check conditions
-            const isExperimentalLabel = labelName === "fix-me-experimental";
-            const isIssueCommentExperimental =
-              (eventName === "issue_comment" || eventName === "pull_request_review_comment") &&
-              commentBody.includes("@openhands-agent-exp");
-            const isReviewCommentExperimental =
-              eventName === "pull_request_review" && reviewBody.includes("@openhands-agent-exp");
-
             // Set output variable
-            core.setOutput('isExperimental', isExperimentalLabel || isIssueCommentExperimental || isReviewCommentExperimental);
+            core.setOutput('isExperimental', true);
 
             // Perform package installation
             console.log("Installing experimental OpenHands...");
