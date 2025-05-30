@@ -227,6 +227,11 @@ jobs:
       - name: Install OpenHands (Local)
         id: install_openhands
         uses: actions/github-script@v7
+        env:
+          COMMENT_BODY: ${{ github.event.comment.body || '' }}
+          REVIEW_BODY: ${{ github.event.review.body || '' }}
+          LABEL_NAME: ${{ github.event.label.name || '' }}
+          EVENT_NAME: ${{ github.event_name || '' }}
         with:
           script: |
             const commentBody = process.env.COMMENT_BODY.trim();
