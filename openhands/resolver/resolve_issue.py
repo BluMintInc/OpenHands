@@ -1,15 +1,8 @@
 # flake8: noqa: E501
 
 import asyncio
-import dataclasses
-import json
-import os
-import pathlib
-import shutil
-import subprocess
-from typing import Any
-from uuid import uuid4
 
+<<<<<<< HEAD
 from pydantic import SecretStr
 from termcolor import colored
 
@@ -531,6 +524,9 @@ async def resolve_issue(
     finally:
         output_fp.close()
         logger.info('Finished.')
+=======
+from openhands.resolver.issue_resolver import IssueResolver
+>>>>>>> upstream/main
 
 
 def main() -> None:
@@ -544,7 +540,7 @@ def main() -> None:
 
     parser = argparse.ArgumentParser(description='Resolve a single issue.')
     parser.add_argument(
-        '--repo',
+        '--selected-repo',
         type=str,
         required=True,
         help='repository to resolve issues in form of `owner/repo`.',
@@ -560,6 +556,12 @@ def main() -> None:
         type=str,
         default=None,
         help='username to access the repository.',
+    )
+    parser.add_argument(
+        '--base-container-image',
+        type=str,
+        default=None,
+        help='base container image to use.',
     )
     parser.add_argument(
         '--runtime-container-image',
@@ -634,78 +636,17 @@ def main() -> None:
         type=lambda x: x.lower() == 'true',
         help='Whether to run in experimental mode.',
     )
+    parser.add_argument(
+        '--base-domain',
+        type=str,
+        default=None,
+        help='Base domain for the git server (defaults to "github.com" for GitHub and "gitlab.com" for GitLab)',
+    )
 
     my_args = parser.parse_args()
 
-    runtime_container_image = my_args.runtime_container_image
-    if runtime_container_image is None and not my_args.is_experimental:
-        runtime_container_image = (
-            f'ghcr.io/all-hands-ai/runtime:{openhands.__version__}-nikolaik'
-        )
-
-    parts = my_args.repo.rsplit('/', 1)
-    if len(parts) < 2:
-        raise ValueError('Invalid repo name')
-    owner, repo = parts
-
-    token = my_args.token or os.getenv('GITHUB_TOKEN') or os.getenv('GITLAB_TOKEN')
-    username = my_args.username if my_args.username else os.getenv('GIT_USERNAME')
-    if not username:
-        raise ValueError('Username is required.')
-
-    if not token:
-        raise ValueError('Token is required.')
-
-    platform = identify_token(token, repo)
-    if platform == Platform.INVALID:
-        raise ValueError('Token is invalid.')
-
-    api_key = my_args.llm_api_key or os.environ['LLM_API_KEY']
-    llm_config = LLMConfig(
-        model=my_args.llm_model or os.environ['LLM_MODEL'],
-        api_key=SecretStr(api_key) if api_key else None,
-        base_url=my_args.llm_base_url or os.environ.get('LLM_BASE_URL', None),
-    )
-
-    repo_instruction = None
-    if my_args.repo_instruction_file:
-        with open(my_args.repo_instruction_file, 'r') as f:
-            repo_instruction = f.read()
-
-    issue_type = my_args.issue_type
-
-    # Read the prompt template
-    prompt_file = my_args.prompt_file
-    if prompt_file is None:
-        if issue_type == 'issue':
-            prompt_file = os.path.join(
-                os.path.dirname(__file__), 'prompts/resolve/basic-with-tests.jinja'
-            )
-        else:
-            prompt_file = os.path.join(
-                os.path.dirname(__file__), 'prompts/resolve/basic-followup.jinja'
-            )
-    with open(prompt_file, 'r') as f:
-        prompt_template = f.read()
-
-    asyncio.run(
-        resolve_issue(
-            owner=owner,
-            repo=repo,
-            token=token,
-            username=username,
-            platform=platform,
-            runtime_container_image=runtime_container_image,
-            max_iterations=my_args.max_iterations,
-            output_dir=my_args.output_dir,
-            llm_config=llm_config,
-            prompt_template=prompt_template,
-            issue_type=issue_type,
-            repo_instruction=repo_instruction,
-            issue_number=my_args.issue_number,
-            comment_id=my_args.comment_id,
-        )
-    )
+    issue_resolver = IssueResolver(my_args)
+    asyncio.run(issue_resolver.resolve_issue())
 
 
 if __name__ == '__main__':
