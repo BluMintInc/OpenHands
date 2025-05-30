@@ -314,6 +314,11 @@ class IssueResolver:
         if not isinstance(obs, CmdOutputObservation) or obs.exit_code != 0:
             raise RuntimeError(f'Failed to set git config. Observation: {obs}')
 
+        action = CmdRunAction(command='npm i')
+        logger.info(action, extra={'msg_type': 'ACTION'})
+        obs = runtime.run_action(action)
+        logger.info(obs, extra={'msg_type': 'OBSERVATION'})
+
         if self.platform == ProviderType.GITLAB and self.GITLAB_CI:
             action = CmdRunAction(command='sudo git add -A')
         else:
